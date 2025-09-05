@@ -1,0 +1,510 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2>All Tasks</h2>
+    <div>
+        <button class="btn btn-outline-secondary me-2" id="filterBtn">
+            <i class="bi bi-funnel"></i> Filters
+        </button>
+        <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#createTaskModal">
+            <i class="bi bi-plus-circle"></i> New Task
+        </button>
+    </div>
+</div>
+
+<!-- Filters Panel -->
+<div class="card mb-4" id="filtersPanel" style="display: none;">
+    <div class="card-body">
+        <div class="row">
+            <div class="col-md-3">
+                <label for="projectFilter" class="form-label">Project</label>
+                <select class="form-select" id="projectFilter">
+                    <option value="">All Projects</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label for="statusFilter" class="form-label">Status</label>
+                <select class="form-select" id="statusFilter">
+                    <option value="">All Statuses</option>
+                    <option value="backlog">Backlog</option>
+                    <option value="todo">To Do</option>
+                    <option value="doing">Doing</option>
+                    <option value="done">Done</option>
+                    <option value="cancelled">Cancelled</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label for="typeFilter" class="form-label">Type</label>
+                <select class="form-select" id="typeFilter">
+                    <option value="">All Types</option>
+                    <option value="task">Task</option>
+                    <option value="story">Story</option>
+                    <option value="bug">Bug</option>
+                    <option value="epic">Epic</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label for="assigneeFilter" class="form-label">Assignee</label>
+                <select class="form-select" id="assigneeFilter">
+                    <option value="">All Assignees</option>
+                </select>
+            </div>
+        </div>
+        <div class="row mt-3">
+            <div class="col-md-6">
+                <label for="searchInput" class="form-label">Search</label>
+                <input type="text" class="form-control" id="searchInput" placeholder="Search tasks...">
+            </div>
+            <div class="col-md-6 d-flex align-items-end">
+                <button class="btn btn-outline-primary me-2" id="applyFilters">Apply Filters</button>
+                <button class="btn btn-outline-secondary" id="clearFilters">Clear</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Tasks List -->
+<div class="card">
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-hover" id="tasksTable">
+                <thead class="table-dark">
+                    <tr>
+                        <th style="width: 5%;">
+                            <input type="checkbox" id="selectAll" class="form-check-input">
+                        </th>
+                        <th style="width: 10%;">Task Key</th>
+                        <th style="width: 20%;">Title</th>
+                        <th style="width: 15%;">Project</th>
+                        <th style="width: 10%;">Type</th>
+                        <th style="width: 10%;">Status</th>
+                        <th style="width: 10%;">Priority</th>
+                        <th style="width: 15%;">Assignee</th>
+                        <th style="width: 10%;">Due Date</th>
+                    </tr>
+                </thead>
+                <tbody id="tasksTableBody">
+                    <!-- Tasks will be loaded here -->
+                </tbody>
+            </table>
+        </div>
+        
+        <div class="d-flex justify-content-between align-items-center mt-3">
+            <div>
+                <button class="btn btn-outline-secondary" id="bulkEditBtn" disabled>
+                    <i class="bi bi-pencil"></i> Bulk Edit
+                </button>
+                <button class="btn btn-outline-danger" id="bulkDeleteBtn" disabled>
+                    <i class="bi bi-trash"></i> Delete Selected
+                </button>
+            </div>
+            <div>
+                <span class="text-muted">Showing <span id="taskCount">0</span> tasks</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Create Task Modal -->
+<div class="modal fade" id="createTaskModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Create New Task</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="createTaskForm">
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="col-md-8">
+                            <div class="mb-3">
+                                <label for="taskTitle" class="form-label">Title</label>
+                                <input type="text" class="form-control" id="taskTitle" name="title" required>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label for="taskType" class="form-label">Type</label>
+                                <select class="form-select" id="taskType" name="task_type">
+                                    <option value="task">Task</option>
+                                    <option value="story">Story</option>
+                                    <option value="bug">Bug</option>
+                                    <option value="epic">Epic</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="taskDescription" class="form-label">Description</label>
+                        <textarea class="form-control" id="taskDescription" name="description" rows="3"></textarea>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label for="taskProject" class="form-label">Project</label>
+                                <select class="form-select" id="taskProject" name="project_id" required>
+                                    <option value="">Select Project</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label for="taskStatus" class="form-label">Status</label>
+                                <select class="form-select" id="taskStatus" name="status">
+                                    <option value="backlog">Backlog</option>
+                                    <option value="todo">To Do</option>
+                                    <option value="doing">Doing</option>
+                                    <option value="done">Done</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label for="taskPriority" class="form-label">Priority</label>
+                                <select class="form-select" id="taskPriority" name="priority">
+                                    <option value="low">Low</option>
+                                    <option value="medium" selected>Medium</option>
+                                    <option value="high">High</option>
+                                    <option value="critical">Critical</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="taskAssignee" class="form-label">Assignee</label>
+                                <select class="form-select" id="taskAssignee" name="assignee_id">
+                                    <option value="">Unassigned</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="taskDueDate" class="form-label">Due Date</label>
+                                <input type="date" class="form-control" id="taskDueDate" name="due_date">
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="taskEstimatedHours" class="form-label">Estimated Hours</label>
+                                <input type="number" class="form-control" id="taskEstimatedHours" name="estimated_hours" step="0.5" min="0">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Create Task</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    let allTasks = [];
+    let filteredTasks = [];
+    
+    // Load data
+    loadAllTasks();
+    loadProjects();
+    loadUsers();
+    
+    // Setup event listeners
+    setupEventListeners();
+    
+    function loadAllTasks() {
+        // Load tasks from all projects the user has access to
+        fetch('/api/projects')
+            .then(response => response.json())
+            .then(projects => {
+                const projectIds = projects.map(p => p.id);
+                const taskPromises = projectIds.map(projectId => 
+                    fetch(`/api/projects/${projectId}/tasks`)
+                        .then(response => response.json())
+                );
+                
+                return Promise.all(taskPromises);
+            })
+            .then(taskArrays => {
+                allTasks = taskArrays.flat();
+                filteredTasks = allTasks;
+                renderTasks();
+                updateTaskCount();
+            })
+            .catch(error => {
+                console.error('Error loading tasks:', error);
+                showAlert('Error loading tasks', 'danger');
+            });
+    }
+    
+    function loadProjects() {
+        fetch('/api/projects')
+            .then(response => response.json())
+            .then(projects => {
+                const projectFilter = document.getElementById('projectFilter');
+                const taskProject = document.getElementById('taskProject');
+                
+                projects.forEach(project => {
+                    const option1 = new Option(project.name, project.id);
+                    const option2 = new Option(project.name, project.id);
+                    projectFilter.add(option1);
+                    taskProject.add(option2);
+                });
+            })
+            .catch(error => {
+                console.error('Error loading projects:', error);
+            });
+    }
+    
+    function loadUsers() {
+        fetch('/api/users')
+            .then(response => response.json())
+            .then(users => {
+                const assigneeFilter = document.getElementById('assigneeFilter');
+                const taskAssignee = document.getElementById('taskAssignee');
+                
+                users.forEach(user => {
+                    const option1 = new Option(user.full_name || user.username, user.id);
+                    const option2 = new Option(user.full_name || user.username, user.id);
+                    assigneeFilter.add(option1);
+                    taskAssignee.add(option2);
+                });
+            })
+            .catch(error => {
+                console.error('Error loading users:', error);
+            });
+    }
+    
+    function renderTasks() {
+        const tbody = document.getElementById('tasksTableBody');
+        tbody.innerHTML = '';
+        
+        if (filteredTasks.length === 0) {
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="9" class="text-center text-muted py-4">
+                        <i class="bi bi-inbox display-4"></i>
+                        <p class="mt-2">No tasks found</p>
+                    </td>
+                </tr>
+            `;
+            return;
+        }
+        
+        filteredTasks.forEach(task => {
+            const row = createTaskRow(task);
+            tbody.appendChild(row);
+        });
+    }
+    
+    function createTaskRow(task) {
+        const row = document.createElement('tr');
+        row.dataset.taskId = task.id;
+        
+        const statusClass = {
+            'backlog': 'secondary',
+            'todo': 'primary',
+            'doing': 'warning',
+            'done': 'success',
+            'cancelled': 'danger'
+        }[task.status] || 'secondary';
+        
+        const priorityClass = {
+            'low': 'success',
+            'medium': 'info',
+            'high': 'warning',
+            'critical': 'danger'
+        }[task.priority] || 'info';
+        
+        row.innerHTML = `
+            <td>
+                <input type="checkbox" class="form-check-input task-checkbox" value="${task.id}">
+            </td>
+            <td>
+                <span class="badge bg-light text-dark">${task.task_key || `TASK-${task.id}`}</span>
+            </td>
+            <td>
+                <a href="#" class="text-decoration-none" onclick="editTask(${task.id})">
+                    ${task.title}
+                </a>
+            </td>
+            <td>
+                <a href="/projects/${task.project_id}" class="text-decoration-none">
+                    ${task.project ? task.project.name : 'Unknown Project'}
+                </a>
+            </td>
+            <td>
+                <span class="badge bg-light text-dark">${task.task_type || 'task'}</span>
+            </td>
+            <td>
+                <span class="badge bg-${statusClass}">${task.status}</span>
+            </td>
+            <td>
+                <span class="badge bg-${priorityClass}">${task.priority}</span>
+            </td>
+            <td>${task.assignee ? (task.assignee.full_name || task.assignee.username) : 'Unassigned'}</td>
+            <td>${task.due_date ? new Date(task.due_date).toLocaleDateString() : '-'}</td>
+        `;
+        
+        return row;
+    }
+    
+    function setupEventListeners() {
+        // Filter toggle
+        document.getElementById('filterBtn').addEventListener('click', function() {
+            const panel = document.getElementById('filtersPanel');
+            panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
+        });
+        
+        // Apply filters
+        document.getElementById('applyFilters').addEventListener('click', applyFilters);
+        document.getElementById('clearFilters').addEventListener('click', clearFilters);
+        
+        // Select all checkbox
+        document.getElementById('selectAll').addEventListener('change', function() {
+            const checkboxes = document.querySelectorAll('.task-checkbox');
+            checkboxes.forEach(cb => cb.checked = this.checked);
+            updateBulkButtons();
+        });
+        
+        // Individual checkboxes
+        document.addEventListener('change', function(e) {
+            if (e.target.classList.contains('task-checkbox')) {
+                updateBulkButtons();
+                updateSelectAll();
+            }
+        });
+        
+        // Create task form
+        document.getElementById('createTaskForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            createTask();
+        });
+    }
+    
+    function applyFilters() {
+        const projectFilter = document.getElementById('projectFilter').value;
+        const statusFilter = document.getElementById('statusFilter').value;
+        const typeFilter = document.getElementById('typeFilter').value;
+        const assigneeFilter = document.getElementById('assigneeFilter').value;
+        const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+        
+        filteredTasks = allTasks.filter(task => {
+            const matchesProject = !projectFilter || task.project_id == projectFilter;
+            const matchesStatus = !statusFilter || task.status === statusFilter;
+            const matchesType = !typeFilter || (task.task_type || 'task') === typeFilter;
+            const matchesAssignee = !assigneeFilter || (task.assignee && task.assignee.id == assigneeFilter);
+            const matchesSearch = !searchTerm || 
+                task.title.toLowerCase().includes(searchTerm) ||
+                (task.description && task.description.toLowerCase().includes(searchTerm));
+            
+            return matchesProject && matchesStatus && matchesType && matchesAssignee && matchesSearch;
+        });
+        
+        renderTasks();
+        updateTaskCount();
+    }
+    
+    function clearFilters() {
+        document.getElementById('projectFilter').value = '';
+        document.getElementById('statusFilter').value = '';
+        document.getElementById('typeFilter').value = '';
+        document.getElementById('assigneeFilter').value = '';
+        document.getElementById('searchInput').value = '';
+        
+        filteredTasks = allTasks;
+        renderTasks();
+        updateTaskCount();
+    }
+    
+    function updateTaskCount() {
+        document.getElementById('taskCount').textContent = filteredTasks.length;
+    }
+    
+    function updateBulkButtons() {
+        const checkedBoxes = document.querySelectorAll('.task-checkbox:checked');
+        const bulkEditBtn = document.getElementById('bulkEditBtn');
+        const bulkDeleteBtn = document.getElementById('bulkDeleteBtn');
+        
+        const hasSelection = checkedBoxes.length > 0;
+        bulkEditBtn.disabled = !hasSelection;
+        bulkDeleteBtn.disabled = !hasSelection;
+    }
+    
+    function updateSelectAll() {
+        const checkboxes = document.querySelectorAll('.task-checkbox');
+        const selectAll = document.getElementById('selectAll');
+        const checkedCount = document.querySelectorAll('.task-checkbox:checked').length;
+        
+        selectAll.checked = checkedCount === checkboxes.length;
+        selectAll.indeterminate = checkedCount > 0 && checkedCount < checkboxes.length;
+    }
+    
+    function createTask() {
+        const formData = new FormData(document.getElementById('createTaskForm'));
+        const taskData = Object.fromEntries(formData);
+        
+        fetch(`/api/projects/${taskData.project_id}/tasks`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(taskData)
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.id) {
+                // Close modal and reload tasks
+                bootstrap.Modal.getInstance(document.getElementById('createTaskModal')).hide();
+                document.getElementById('createTaskForm').reset();
+                loadAllTasks();
+                showAlert('Task created successfully!', 'success');
+            } else {
+                showAlert('Error creating task: ' + (data.error || 'Unknown error'), 'danger');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showAlert('Error creating task', 'danger');
+        });
+    }
+    
+    // Global functions
+    window.editTask = function(taskId) {
+        // TODO: Implement task editing
+        showAlert('Task editing will be implemented soon!', 'info');
+    };
+    
+    function showAlert(message, type) {
+        const alertDiv = document.createElement('div');
+        alertDiv.className = `alert alert-${type} alert-dismissible fade show`;
+        alertDiv.innerHTML = `
+            ${message}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        `;
+        
+        const container = document.querySelector('.main-content');
+        container.insertBefore(alertDiv, container.firstChild);
+        
+        // Auto-dismiss after 5 seconds
+        setTimeout(() => {
+            if (alertDiv.parentNode) {
+                alertDiv.remove();
+            }
+        }, 5000);
+    }
+});
+</script>
+{% endblock %}

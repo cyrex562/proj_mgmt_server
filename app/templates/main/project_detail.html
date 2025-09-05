@@ -1,0 +1,337 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2>{{ project.name }}</h2>
+    <div>
+        <a href="{{ url_for('main.project_board', project_id=project.id) }}" class="btn btn-outline-success me-2">
+            <i class="bi bi-kanban"></i> Board View
+        </a>
+        <a href="{{ url_for('main.project_spreadsheet', project_id=project.id) }}" class="btn btn-outline-info me-2">
+            <i class="bi bi-table"></i> Spreadsheet View
+        </a>
+        <a href="{{ url_for('main.project_milestones', project_id=project.id) }}" class="btn btn-outline-warning me-2">
+            <i class="bi bi-flag"></i> Milestones
+        </a>
+        <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#createTaskModal">
+            <i class="bi bi-plus-circle"></i> New Task
+        </button>
+    </div>
+</div>
+
+<!-- Project Info Card -->
+<div class="card mb-4">
+    <div class="card-body">
+        <div class="row">
+            <div class="col-md-8">
+                <h5 class="card-title">{{ project.name }}</h5>
+                <p class="card-text text-muted">{{ project.description or 'No description provided' }}</p>
+                <p class="card-text">
+                    <span class="badge bg-primary">{{ project.key }}</span>
+                </p>
+                <div class="d-flex align-items-center">
+                    <span class="badge bg-{{ 'success' if project.status == 'active' else 'secondary' }} me-2">
+                        {{ project.status.title() }}
+                    </span>
+                    <span class="badge bg-{{ 'danger' if project.priority == 'critical' else 'warning' if project.priority == 'high' else 'info' if project.priority == 'medium' else 'success' }} me-2">
+                        {{ project.priority.title() }}
+                    </span>
+                    <small class="text-muted">
+                        Created {{ project.created_at.strftime('%B %d, %Y') }}
+                    </small>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="text-end">
+                    <h6>Project Statistics</h6>
+                    <div class="row text-center">
+                        <div class="col-4">
+                            <div class="border rounded p-2">
+                                <div class="h5 mb-0" id="totalTasks">0</div>
+                                <small class="text-muted">Total Tasks</small>
+                            </div>
+                        </div>
+                        <div class="col-4">
+                            <div class="border rounded p-2">
+                                <div class="h5 mb-0" id="completedTasks">0</div>
+                                <small class="text-muted">Completed</small>
+                            </div>
+                        </div>
+                        <div class="col-4">
+                            <div class="border rounded p-2">
+                                <div class="h5 mb-0" id="progressPercentage">0%</div>
+                                <small class="text-muted">Progress</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Recent Tasks -->
+<div class="card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h5 class="mb-0">Recent Tasks</h5>
+        <a href="{{ url_for('main.project_spreadsheet', project_id=project.id) }}" class="btn btn-sm btn-outline-primary">
+            View All Tasks
+        </a>
+    </div>
+    <div class="card-body">
+        <div id="recentTasks">
+            <!-- Tasks will be loaded here -->
+        </div>
+    </div>
+</div>
+
+<!-- Create Task Modal -->
+<div class="modal fade" id="createTaskModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Create New Task</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="createTaskForm">
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="col-md-8">
+                            <div class="mb-3">
+                                <label for="taskTitle" class="form-label">Title</label>
+                                <input type="text" class="form-control" id="taskTitle" name="title" required>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label for="taskType" class="form-label">Type</label>
+                                <select class="form-select" id="taskType" name="task_type">
+                                    <option value="task">Task</option>
+                                    <option value="story">Story</option>
+                                    <option value="bug">Bug</option>
+                                    <option value="epic">Epic</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="taskDescription" class="form-label">Description</label>
+                        <textarea class="form-control" id="taskDescription" name="description" rows="3"></textarea>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label for="taskStatus" class="form-label">Status</label>
+                                <select class="form-select" id="taskStatus" name="status">
+                                    <option value="backlog">Backlog</option>
+                                    <option value="todo">To Do</option>
+                                    <option value="doing">Doing</option>
+                                    <option value="done">Done</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label for="taskPriority" class="form-label">Priority</label>
+                                <select class="form-select" id="taskPriority" name="priority">
+                                    <option value="low">Low</option>
+                                    <option value="medium" selected>Medium</option>
+                                    <option value="high">High</option>
+                                    <option value="critical">Critical</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label for="taskAssignee" class="form-label">Assignee</label>
+                                <select class="form-select" id="taskAssignee" name="assignee_id">
+                                    <option value="">Unassigned</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="taskDueDate" class="form-label">Due Date</label>
+                                <input type="date" class="form-control" id="taskDueDate" name="due_date">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="taskEstimatedHours" class="form-label">Estimated Hours</label>
+                                <input type="number" class="form-control" id="taskEstimatedHours" name="estimated_hours" step="0.5" min="0">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Create Task</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const projectId = {{ project.id }};
+    
+    // Load project data
+    loadProjectTasks();
+    loadUsers();
+    
+    // Setup event listeners
+    document.getElementById('createTaskForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        createTask();
+    });
+    
+    function loadProjectTasks() {
+        fetch(`/api/projects/${projectId}/tasks`)
+            .then(response => response.json())
+            .then(tasks => {
+                updateProjectStats(tasks);
+                displayRecentTasks(tasks);
+            })
+            .catch(error => {
+                console.error('Error loading tasks:', error);
+                showAlert('Error loading project tasks', 'danger');
+            });
+    }
+    
+    function loadUsers() {
+        fetch('/api/users')
+            .then(response => response.json())
+            .then(users => {
+                const taskAssignee = document.getElementById('taskAssignee');
+                users.forEach(user => {
+                    const option = new Option(user.full_name || user.username, user.id);
+                    taskAssignee.add(option);
+                });
+            })
+            .catch(error => {
+                console.error('Error loading users:', error);
+            });
+    }
+    
+    function updateProjectStats(tasks) {
+        const totalTasks = tasks.length;
+        const completedTasks = tasks.filter(task => task.status === 'done').length;
+        const progressPercentage = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
+        
+        document.getElementById('totalTasks').textContent = totalTasks;
+        document.getElementById('completedTasks').textContent = completedTasks;
+        document.getElementById('progressPercentage').textContent = progressPercentage + '%';
+    }
+    
+    function displayRecentTasks(tasks) {
+        const recentTasksContainer = document.getElementById('recentTasks');
+        const recentTasks = tasks.slice(0, 5); // Show only 5 most recent
+        
+        if (recentTasks.length === 0) {
+            recentTasksContainer.innerHTML = `
+                <div class="text-center text-muted py-4">
+                    <i class="bi bi-inbox display-4"></i>
+                    <p class="mt-2">No tasks yet. Create your first task to get started!</p>
+                </div>
+            `;
+            return;
+        }
+        
+        const tasksHtml = recentTasks.map(task => {
+            const statusClass = {
+                'backlog': 'secondary',
+                'todo': 'primary',
+                'doing': 'warning',
+                'done': 'success',
+                'cancelled': 'danger'
+            }[task.status] || 'secondary';
+            
+            const priorityClass = {
+                'low': 'success',
+                'medium': 'info',
+                'high': 'warning',
+                'critical': 'danger'
+            }[task.priority] || 'info';
+            
+            return `
+                <div class="d-flex justify-content-between align-items-center border-bottom py-2">
+                    <div class="flex-grow-1">
+                        <h6 class="mb-1">${task.title}</h6>
+                        <div class="d-flex align-items-center">
+                            <span class="badge bg-${statusClass} me-2">${task.status}</span>
+                            <span class="badge bg-${priorityClass} me-2">${task.priority}</span>
+                            <small class="text-muted">
+                                ${task.assignee ? (task.assignee.full_name || task.assignee.username) : 'Unassigned'}
+                            </small>
+                        </div>
+                    </div>
+                    <div class="text-end">
+                        <small class="text-muted">
+                            ${task.due_date ? new Date(task.due_date).toLocaleDateString() : 'No due date'}
+                        </small>
+                    </div>
+                </div>
+            `;
+        }).join('');
+        
+        recentTasksContainer.innerHTML = tasksHtml;
+    }
+    
+    function createTask() {
+        const formData = new FormData(document.getElementById('createTaskForm'));
+        const taskData = Object.fromEntries(formData);
+        
+        fetch(`/api/projects/${projectId}/tasks`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(taskData)
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.id) {
+                // Close modal and reload tasks
+                bootstrap.Modal.getInstance(document.getElementById('createTaskModal')).hide();
+                document.getElementById('createTaskForm').reset();
+                loadProjectTasks();
+                showAlert('Task created successfully!', 'success');
+            } else {
+                showAlert('Error creating task: ' + (data.error || 'Unknown error'), 'danger');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showAlert('Error creating task', 'danger');
+        });
+    }
+    
+    function showAlert(message, type) {
+        const alertDiv = document.createElement('div');
+        alertDiv.className = `alert alert-${type} alert-dismissible fade show`;
+        alertDiv.innerHTML = `
+            ${message}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        `;
+        
+        const container = document.querySelector('.main-content');
+        container.insertBefore(alertDiv, container.firstChild);
+        
+        // Auto-dismiss after 5 seconds
+        setTimeout(() => {
+            if (alertDiv.parentNode) {
+                alertDiv.remove();
+            }
+        }, 5000);
+    }
+});
+</script>
+{% endblock %}

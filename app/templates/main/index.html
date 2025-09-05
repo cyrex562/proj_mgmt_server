@@ -1,0 +1,92 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row">
+    <div class="col-lg-8 mx-auto text-center">
+        <h1 class="display-4 mb-4">Project Management Made Simple</h1>
+        <p class="lead mb-4">
+            Organize your projects, track tasks, and collaborate with your team using our comprehensive project management platform.
+        </p>
+        
+        {% if not current_user.is_authenticated %}
+        <div class="d-grid gap-2 d-md-flex justify-content-md-center">
+            <a href="{{ url_for('auth.login') }}" class="btn btn-primary btn-lg me-md-2">
+                <i class="bi bi-box-arrow-in-right"></i> Sign In
+            </a>
+            <a href="{{ url_for('auth.register') }}" class="btn btn-outline-primary btn-lg">
+                <i class="bi bi-person-plus"></i> Sign Up
+            </a>
+        </div>
+        {% else %}
+        <div class="d-grid gap-2 d-md-flex justify-content-md-center">
+            <a href="{{ url_for('main.dashboard') }}" class="btn btn-primary btn-lg me-md-2">
+                <i class="bi bi-speedometer2"></i> Go to Dashboard
+            </a>
+            <a href="{{ url_for('main.projects') }}" class="btn btn-outline-primary btn-lg">
+                <i class="bi bi-folder"></i> View Projects
+            </a>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<div class="row mt-5">
+    <div class="col-md-4">
+        <div class="card h-100">
+            <div class="card-body text-center">
+                <i class="bi bi-kanban display-4 text-primary mb-3"></i>
+                <h5 class="card-title">Kanban Boards</h5>
+                <p class="card-text">Visualize your workflow with drag-and-drop kanban boards for better task management.</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card h-100">
+            <div class="card-body text-center">
+                <i class="bi bi-table display-4 text-success mb-3"></i>
+                <h5 class="card-title">Spreadsheet View</h5>
+                <p class="card-text">Manage tasks in a familiar spreadsheet format with sorting, filtering, and bulk operations.</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card h-100">
+            <div class="card-body text-center">
+                <i class="bi bi-people display-4 text-info mb-3"></i>
+                <h5 class="card-title">Team Collaboration</h5>
+                <p class="card-text">Work together with your team using role-based permissions and real-time updates.</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mt-4">
+    <div class="col-md-4">
+        <div class="card h-100">
+            <div class="card-body text-center">
+                <i class="bi bi-file-earmark display-4 text-warning mb-3"></i>
+                <h5 class="card-title">File Attachments</h5>
+                <p class="card-text">Attach files to tasks and projects with support for local and cloud storage.</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card h-100">
+            <div class="card-body text-center">
+                <i class="bi bi-git display-4 text-danger mb-3"></i>
+                <h5 class="card-title">Git Integration</h5>
+                <p class="card-text">Connect with GitLab, GitHub, or Forgejo for seamless development workflow integration.</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card h-100">
+            <div class="card-body text-center">
+                <i class="bi bi-shield-check display-4 text-secondary mb-3"></i>
+                <h5 class="card-title">Secure & Scalable</h5>
+                <p class="card-text">Built with security in mind, supporting OIDC authentication and Docker deployment.</p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

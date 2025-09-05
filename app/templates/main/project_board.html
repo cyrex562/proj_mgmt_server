@@ -1,0 +1,494 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2>{{ project.name }} - Kanban Board</h2>
+    <div>
+        <a href="{{ url_for('main.project_detail', project_id=project.id) }}" class="btn btn-outline-primary me-2">
+            <i class="bi bi-eye"></i> View
+        </a>
+        <a href="{{ url_for('main.project_spreadsheet', project_id=project.id) }}" class="btn btn-outline-info me-2">
+            <i class="bi bi-table"></i> Spreadsheet View
+        </a>
+        <a href="{{ url_for('main.project_milestones', project_id=project.id) }}" class="btn btn-outline-warning me-2">
+            <i class="bi bi-flag"></i> Milestones
+        </a>
+        <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#createTaskModal">
+            <i class="bi bi-plus-circle"></i> New Task
+        </button>
+    </div>
+</div>
+
+<!-- Project Info Card -->
+<div class="card mb-4">
+    <div class="card-body">
+        <div class="row">
+            <div class="col-md-8">
+                <h5 class="card-title">{{ project.name }}</h5>
+                <p class="card-text text-muted">{{ project.description or 'No description provided' }}</p>
+            </div>
+            <div class="col-md-4 text-end">
+                <span class="badge bg-{{ 'success' if project.status == 'active' else 'secondary' }} me-2">
+                    {{ project.status.title() }}
+                </span>
+                <span class="badge bg-{{ 'danger' if project.priority == 'critical' else 'warning' if project.priority == 'high' else 'info' if project.priority == 'medium' else 'success' }}">
+                    {{ project.priority.title() }}
+                </span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Kanban Board -->
+<div class="row" id="kanbanBoard">
+    <!-- Backlog Column -->
+    <div class="col-md-3">
+        <div class="card">
+            <div class="card-header bg-secondary text-white">
+                <h6 class="mb-0">
+                    <i class="bi bi-list-ul"></i> Backlog
+                    <span class="badge bg-light text-dark ms-2" id="backlogCount">0</span>
+                </h6>
+            </div>
+            <div class="card-body kanban-column" data-status="backlog" style="min-height: 400px;">
+                <!-- Backlog tasks will be loaded here -->
+            </div>
+        </div>
+    </div>
+    
+    <!-- To Do Column -->
+    <div class="col-md-3">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h6 class="mb-0">
+                    <i class="bi bi-list-check"></i> To Do
+                    <span class="badge bg-light text-dark ms-2" id="todoCount">0</span>
+                </h6>
+            </div>
+            <div class="card-body kanban-column" data-status="todo" style="min-height: 400px;">
+                <!-- To Do tasks will be loaded here -->
+            </div>
+        </div>
+    </div>
+    
+    <!-- Doing Column -->
+    <div class="col-md-3">
+        <div class="card">
+            <div class="card-header bg-warning text-dark">
+                <h6 class="mb-0">
+                    <i class="bi bi-arrow-repeat"></i> Doing
+                    <span class="badge bg-light text-dark ms-2" id="doingCount">0</span>
+                </h6>
+            </div>
+            <div class="card-body kanban-column" data-status="doing" style="min-height: 400px;">
+                <!-- Doing tasks will be loaded here -->
+            </div>
+        </div>
+    </div>
+    
+    <!-- Done Column -->
+    <div class="col-md-3">
+        <div class="card">
+            <div class="card-header bg-success text-white">
+                <h6 class="mb-0">
+                    <i class="bi bi-check-circle"></i> Done
+                    <span class="badge bg-light text-dark ms-2" id="doneCount">0</span>
+                </h6>
+            </div>
+            <div class="card-body kanban-column" data-status="done" style="min-height: 400px;">
+                <!-- Done tasks will be loaded here -->
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Create Task Modal -->
+<div class="modal fade" id="createTaskModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Create New Task</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="createTaskForm">
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="col-md-8">
+                            <div class="mb-3">
+                                <label for="taskTitle" class="form-label">Title</label>
+                                <input type="text" class="form-control" id="taskTitle" name="title" required>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label for="taskType" class="form-label">Type</label>
+                                <select class="form-select" id="taskType" name="task_type">
+                                    <option value="task">Task</option>
+                                    <option value="story">Story</option>
+                                    <option value="bug">Bug</option>
+                                    <option value="epic">Epic</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="taskDescription" class="form-label">Description</label>
+                        <textarea class="form-control" id="taskDescription" name="description" rows="3"></textarea>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label for="taskStatus" class="form-label">Status</label>
+                                <select class="form-select" id="taskStatus" name="status">
+                                    <option value="backlog">Backlog</option>
+                                    <option value="todo">To Do</option>
+                                    <option value="doing">Doing</option>
+                                    <option value="done">Done</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label for="taskPriority" class="form-label">Priority</label>
+                                <select class="form-select" id="taskPriority" name="priority">
+                                    <option value="low">Low</option>
+                                    <option value="medium" selected>Medium</option>
+                                    <option value="high">High</option>
+                                    <option value="critical">Critical</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label for="taskAssignee" class="form-label">Assignee</label>
+                                <select class="form-select" id="taskAssignee" name="assignee_id">
+                                    <option value="">Unassigned</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="taskDueDate" class="form-label">Due Date</label>
+                                <input type="date" class="form-control" id="taskDueDate" name="due_date">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="taskEstimatedHours" class="form-label">Estimated Hours</label>
+                                <input type="number" class="form-control" id="taskEstimatedHours" name="estimated_hours" step="0.5" min="0">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Create Task</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const projectId = {{ project.id }};
+    let allTasks = [];
+    
+    // Load tasks and users
+    loadTasks();
+    loadUsers();
+    
+    // Setup event listeners
+    setupEventListeners();
+    setupSortable();
+    
+    function loadTasks() {
+        fetch(`/api/projects/${projectId}/tasks`)
+            .then(response => response.json())
+            .then(tasks => {
+                allTasks = tasks;
+                renderKanbanBoard();
+                updateColumnCounts();
+            })
+            .catch(error => {
+                console.error('Error loading tasks:', error);
+                showAlert('Error loading tasks', 'danger');
+            });
+    }
+    
+    function loadUsers() {
+        fetch('/api/users')
+            .then(response => response.json())
+            .then(users => {
+                const taskAssignee = document.getElementById('taskAssignee');
+                users.forEach(user => {
+                    const option = new Option(user.full_name || user.username, user.id);
+                    taskAssignee.add(option);
+                });
+            })
+            .catch(error => {
+                console.error('Error loading users:', error);
+            });
+    }
+    
+    function renderKanbanBoard() {
+        const statuses = ['backlog', 'todo', 'doing', 'done'];
+        
+        statuses.forEach(status => {
+            const column = document.querySelector(`[data-status="${status}"]`);
+            const tasks = allTasks.filter(task => task.status === status);
+            
+            column.innerHTML = '';
+            
+            if (tasks.length === 0) {
+                column.innerHTML = `
+                    <div class="text-center text-muted py-4">
+                        <i class="bi bi-inbox"></i>
+                        <p class="mt-2 mb-0">No tasks</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            tasks.forEach(task => {
+                const taskCard = createTaskCard(task);
+                column.appendChild(taskCard);
+            });
+        });
+    }
+    
+    function createTaskCard(task) {
+        const card = document.createElement('div');
+        card.className = 'card mb-3 task-card';
+        card.draggable = true;
+        card.dataset.taskId = task.id;
+        
+        const priorityClass = {
+            'low': 'success',
+            'medium': 'info',
+            'high': 'warning',
+            'critical': 'danger'
+        }[task.priority] || 'info';
+        
+        const typeIcon = {
+            'task': 'bi-list-task',
+            'story': 'bi-book',
+            'bug': 'bi-bug',
+            'epic': 'bi-collection'
+        }[task.task_type] || 'bi-list-task';
+        
+        card.innerHTML = `
+            <div class="card-body p-3">
+                <div class="d-flex justify-content-between align-items-start mb-2">
+                    <h6 class="card-title mb-0">${task.title}</h6>
+                    <span class="badge bg-${priorityClass}">${task.priority}</span>
+                </div>
+                <div class="mb-2">
+                    <small class="badge bg-light text-dark">${task.task_key || `TASK-${task.id}`}</small>
+                </div>
+                <div class="d-flex align-items-center mb-2">
+                    <i class="bi ${typeIcon} me-1"></i>
+                    <small class="text-muted">${task.task_type || 'task'}</small>
+                </div>
+                <div class="d-flex justify-content-between align-items-center">
+                    <small class="text-muted">
+                        ${task.assignee ? (task.assignee.full_name || task.assignee.username) : 'Unassigned'}
+                    </small>
+                    <small class="text-muted">
+                        ${task.due_date ? new Date(task.due_date).toLocaleDateString() : ''}
+                    </small>
+                </div>
+                ${task.milestone ? `
+                    <div class="mt-2">
+                        <small class="badge bg-light text-dark">
+                            <i class="bi bi-flag"></i> ${task.milestone.name}
+                        </small>
+                    </div>
+                ` : ''}
+                ${task.progress_percentage > 0 ? `
+                    <div class="progress mt-2" style="height: 4px;">
+                        <div class="progress-bar" role="progressbar" style="width: ${task.progress_percentage}%"></div>
+                    </div>
+                ` : ''}
+            </div>
+        `;
+        
+        // Add click event to edit task
+        card.addEventListener('click', function() {
+            editTask(task.id);
+        });
+        
+        return card;
+    }
+    
+    function updateColumnCounts() {
+        const statuses = ['backlog', 'todo', 'doing', 'done'];
+        
+        statuses.forEach(status => {
+            const count = allTasks.filter(task => task.status === status).length;
+            const countElement = document.getElementById(`${status}Count`);
+            if (countElement) {
+                countElement.textContent = count;
+            }
+        });
+    }
+    
+    function setupEventListeners() {
+        // Create task form
+        document.getElementById('createTaskForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            createTask();
+        });
+    }
+    
+    function setupSortable() {
+        const columns = document.querySelectorAll('.kanban-column');
+        
+        columns.forEach(column => {
+            new Sortable(column, {
+                group: 'kanban',
+                animation: 150,
+                ghostClass: 'sortable-ghost',
+                chosenClass: 'sortable-chosen',
+                dragClass: 'sortable-drag',
+                onEnd: function(evt) {
+                    const taskId = evt.item.dataset.taskId;
+                    const newStatus = evt.to.dataset.status;
+                    const oldStatus = evt.from.dataset.status;
+                    
+                    if (newStatus !== oldStatus) {
+                        updateTaskStatus(taskId, newStatus);
+                    }
+                }
+            });
+        });
+    }
+    
+    function updateTaskStatus(taskId, newStatus) {
+        fetch(`/api/tasks/${taskId}`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ status: newStatus })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.id) {
+                // Update local data
+                const task = allTasks.find(t => t.id == taskId);
+                if (task) {
+                    task.status = newStatus;
+                }
+                updateColumnCounts();
+                showAlert('Task status updated successfully!', 'success');
+            } else {
+                showAlert('Error updating task status: ' + (data.error || 'Unknown error'), 'danger');
+                // Reload tasks to revert the change
+                loadTasks();
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showAlert('Error updating task status', 'danger');
+            // Reload tasks to revert the change
+            loadTasks();
+        });
+    }
+    
+    function createTask() {
+        const formData = new FormData(document.getElementById('createTaskForm'));
+        const taskData = Object.fromEntries(formData);
+        
+        fetch(`/api/projects/${projectId}/tasks`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(taskData)
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.id) {
+                // Close modal and reload tasks
+                bootstrap.Modal.getInstance(document.getElementById('createTaskModal')).hide();
+                document.getElementById('createTaskForm').reset();
+                loadTasks();
+                showAlert('Task created successfully!', 'success');
+            } else {
+                showAlert('Error creating task: ' + (data.error || 'Unknown error'), 'danger');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showAlert('Error creating task', 'danger');
+        });
+    }
+    
+    // Global functions
+    window.editTask = function(taskId) {
+        // TODO: Implement task editing
+        showAlert('Task editing will be implemented soon!', 'info');
+    };
+    
+    function showAlert(message, type) {
+        const alertDiv = document.createElement('div');
+        alertDiv.className = `alert alert-${type} alert-dismissible fade show`;
+        alertDiv.innerHTML = `
+            ${message}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        `;
+        
+        const container = document.querySelector('.main-content');
+        container.insertBefore(alertDiv, container.firstChild);
+        
+        // Auto-dismiss after 5 seconds
+        setTimeout(() => {
+            if (alertDiv.parentNode) {
+                alertDiv.remove();
+            }
+        }, 5000);
+    }
+});
+</script>
+
+<style>
+.task-card {
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.task-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+
+.kanban-column {
+    transition: background-color 0.2s ease;
+}
+
+.kanban-column:hover {
+    background-color: #f8f9fa;
+}
+
+.sortable-ghost {
+    opacity: 0.4;
+}
+
+.sortable-chosen {
+    transform: rotate(5deg);
+}
+
+.sortable-drag {
+    transform: rotate(5deg);
+}
+</style>
+{% endblock %}
