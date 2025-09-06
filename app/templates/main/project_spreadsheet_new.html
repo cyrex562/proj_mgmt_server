@@ -1,0 +1,781 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2>{{ project.name }} - Work Items Spreadsheet</h2>
+                <div class="btn-group" role="group">
+                    <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#createWorkItemModal">
+                        <i class="bi bi-plus-circle"></i> New Work Item
+                    </button>
+                    <div class="btn-group" role="group">
+                        <button type="button" class="btn btn-outline-secondary dropdown-toggle" data-bs-toggle="dropdown">
+                            <i class="bi bi-funnel"></i> Filter
+                        </button>
+                        <ul class="dropdown-menu">
+                            <li><a class="dropdown-item" href="#" onclick="filterByType('all')">All Types</a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item" href="#" onclick="filterByType('task')">Tasks</a></li>
+                            <li><a class="dropdown-item" href="#" onclick="filterByType('epic')">Epics</a></li>
+                            <li><a class="dropdown-item" href="#" onclick="filterByType('feature')">Features</a></li>
+                            <li><a class="dropdown-item" href="#" onclick="filterByType('story')">Stories</a></li>
+                            <li><a class="dropdown-item" href="#" onclick="filterByType('bug')">Bugs</a></li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Filter and Search Bar -->
+            <div class="row mb-3">
+                <div class="col-md-4">
+                    <div class="input-group">
+                        <span class="input-group-text"><i class="bi bi-search"></i></span>
+                        <input type="text" class="form-control" id="searchInput" placeholder="Search work items...">
+                    </div>
+                </div>
+                <div class="col-md-2">
+                    <select class="form-select" id="statusFilter">
+                        <option value="">All Statuses</option>
+                        <option value="not_started">Not Started</option>
+                        <option value="in_progress">In Progress</option>
+                        <option value="blocked">Blocked</option>
+                        <option value="ready">Ready</option>
+                        <option value="done">Done</option>
+                        <option value="cancelled">Cancelled</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <select class="form-select" id="priorityFilter">
+                        <option value="">All Priorities</option>
+                        <option value="low">Low</option>
+                        <option value="medium">Medium</option>
+                        <option value="high">High</option>
+                        <option value="urgent">Urgent</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <select class="form-select" id="typeFilter">
+                        <option value="">All Types</option>
+                        <option value="task">Task</option>
+                        <option value="epic">Epic</option>
+                        <option value="feature">Feature</option>
+                        <option value="story">Story</option>
+                        <option value="bug">Bug</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <button class="btn btn-outline-primary w-100" onclick="exportToCSV()">
+                        <i class="bi bi-download"></i> Export CSV
+                    </button>
+                </div>
+            </div>
+
+            <!-- Work Items Table -->
+            <div class="card">
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover" id="workItemsTable">
+                            <thead class="table-dark">
+                                <tr>
+                                    <th>Key</th>
+                                    <th>Type</th>
+                                    <th>Title</th>
+                                    <th>Status</th>
+                                    <th>Priority</th>
+                                    <th>Progress</th>
+                                    <th>Assignee</th>
+                                    <th>Due Date</th>
+                                    <th>Created</th>
+                                    <th>Modified</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="workItemsTableBody">
+                                <!-- Work items will be loaded here -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Create Work Item Modal -->
+<div class="modal fade" id="createWorkItemModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Create New Work Item</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="createWorkItemForm">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="createType" class="form-label">Type *</label>
+                                <select class="form-select" id="createType" required>
+                                    <option value="">Select Type</option>
+                                    <option value="task">Task</option>
+                                    <option value="epic">Epic</option>
+                                    <option value="feature">Feature</option>
+                                    <option value="story">Story</option>
+                                    <option value="bug">Bug</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="createPriority" class="form-label">Priority</label>
+                                <select class="form-select" id="createPriority">
+                                    <option value="medium">Medium</option>
+                                    <option value="low">Low</option>
+                                    <option value="high">High</option>
+                                    <option value="urgent">Urgent</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="createTitle" class="form-label">Title *</label>
+                        <input type="text" class="form-control" id="createTitle" required>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="createDescription" class="form-label">Description</label>
+                        <textarea class="form-control" id="createDescription" rows="3"></textarea>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="createParent" class="form-label">Parent (for tasks only)</label>
+                                <select class="form-select" id="createParent">
+                                    <option value="">No Parent</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="createDueDate" class="form-label">Due Date</label>
+                                <input type="date" class="form-control" id="createDueDate">
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div id="storyKindField" class="mb-3" style="display: none;">
+                        <label for="createStoryKind" class="form-label">Story Kind</label>
+                        <select class="form-select" id="createStoryKind">
+                            <option value="user">User Story</option>
+                            <option value="engineering">Engineering Story</option>
+                            <option value="testing">Testing Story</option>
+                        </select>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="createRepoUrl" class="form-label">Repository URL</label>
+                                <input type="url" class="form-control" id="createRepoUrl">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="createBranch" class="form-label">Branch</label>
+                                <input type="text" class="form-control" id="createBranch">
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="createRollupMode">
+                            <label class="form-check-label" for="createRollupMode">
+                                Enable rollup mode (calculate progress from members)
+                            </label>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" onclick="createWorkItem()">Create Work Item</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Edit Work Item Modal -->
+<div class="modal fade" id="editWorkItemModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Edit Work Item</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="editWorkItemForm">
+                    <input type="hidden" id="editWorkItemId">
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="editType" class="form-label">Type</label>
+                                <select class="form-select" id="editType" disabled>
+                                    <option value="task">Task</option>
+                                    <option value="epic">Epic</option>
+                                    <option value="feature">Feature</option>
+                                    <option value="story">Story</option>
+                                    <option value="bug">Bug</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="editPriority" class="form-label">Priority</label>
+                                <select class="form-select" id="editPriority">
+                                    <option value="low">Low</option>
+                                    <option value="medium">Medium</option>
+                                    <option value="high">High</option>
+                                    <option value="urgent">Urgent</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="editTitle" class="form-label">Title</label>
+                        <input type="text" class="form-control" id="editTitle">
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="editDescription" class="form-label">Description</label>
+                        <textarea class="form-control" id="editDescription" rows="3"></textarea>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="editStatus" class="form-label">Status</label>
+                                <select class="form-select" id="editStatus">
+                                    <option value="not_started">Not Started</option>
+                                    <option value="in_progress">In Progress</option>
+                                    <option value="blocked">Blocked</option>
+                                    <option value="ready">Ready</option>
+                                    <option value="done">Done</option>
+                                    <option value="cancelled">Cancelled</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="editParent" class="form-label">Parent (for tasks only)</label>
+                                <select class="form-select" id="editParent">
+                                    <option value="">No Parent</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="editDueDate" class="form-label">Due Date</label>
+                                <input type="date" class="form-control" id="editDueDate">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="editProgress" class="form-label">Progress (%)</label>
+                                <div class="d-flex align-items-center">
+                                    <input type="number" class="form-control me-2" id="editProgress" min="0" max="100" step="0.1">
+                                    <input type="range" class="form-range" id="editProgressSlider" min="0" max="100" step="0.1">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div id="editStoryKindField" class="mb-3" style="display: none;">
+                        <label for="editStoryKind" class="form-label">Story Kind</label>
+                        <select class="form-select" id="editStoryKind">
+                            <option value="user">User Story</option>
+                            <option value="engineering">Engineering Story</option>
+                            <option value="testing">Testing Story</option>
+                        </select>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="editRepoUrl" class="form-label">Repository URL</label>
+                                <input type="url" class="form-control" id="editRepoUrl">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="editBranch" class="form-label">Branch</label>
+                                <input type="text" class="form-control" id="editBranch">
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="editCommitHash" class="form-label">Commit Hash</label>
+                        <input type="text" class="form-control" id="editCommitHash" maxlength="40">
+                    </div>
+                    
+                    <div class="mb-3">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="editRollupMode">
+                            <label class="form-check-label" for="editRollupMode">
+                                Enable rollup mode (calculate progress from members)
+                            </label>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" onclick="updateWorkItem()">Update Work Item</button>
+                <button type="button" class="btn btn-danger" onclick="deleteWorkItem()">Delete</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const projectId = '{{ project.id }}';
+    let allWorkItems = [];
+    let currentFilter = { type: '', status: '', priority: '', search: '' };
+    
+    // Load work items
+    loadWorkItems();
+    
+    // Setup event listeners
+    document.getElementById('searchInput').addEventListener('input', function() {
+        currentFilter.search = this.value;
+        applyFilters();
+    });
+    
+    document.getElementById('statusFilter').addEventListener('change', function() {
+        currentFilter.status = this.value;
+        applyFilters();
+    });
+    
+    document.getElementById('priorityFilter').addEventListener('change', function() {
+        currentFilter.priority = this.value;
+        applyFilters();
+    });
+    
+    document.getElementById('typeFilter').addEventListener('change', function() {
+        currentFilter.type = this.value;
+        applyFilters();
+    });
+    
+    // Type change handler for create modal
+    document.getElementById('createType').addEventListener('change', function() {
+        const storyKindField = document.getElementById('storyKindField');
+        const parentField = document.getElementById('createParent');
+        
+        if (this.value === 'story') {
+            storyKindField.style.display = 'block';
+        } else {
+            storyKindField.style.display = 'none';
+        }
+        
+        // Update parent options based on type
+        updateParentOptions(parentField, this.value);
+    });
+    
+    // Type change handler for edit modal
+    document.getElementById('editType').addEventListener('change', function() {
+        const storyKindField = document.getElementById('editStoryKindField');
+        const parentField = document.getElementById('editParent');
+        
+        if (this.value === 'story') {
+            storyKindField.style.display = 'block';
+        } else {
+            storyKindField.style.display = 'none';
+        }
+        
+        // Update parent options based on type
+        updateParentOptions(parentField, this.value);
+    });
+    
+    // Progress slider synchronization
+    document.getElementById('editProgress').addEventListener('input', function() {
+        document.getElementById('editProgressSlider').value = this.value;
+    });
+    
+    document.getElementById('editProgressSlider').addEventListener('input', function() {
+        document.getElementById('editProgress').value = this.value;
+    });
+    
+    function loadWorkItems() {
+        fetch(`/api/projects/${projectId}/work-items`)
+            .then(response => response.json())
+            .then(data => {
+                allWorkItems = data;
+                renderWorkItems();
+            })
+            .catch(error => {
+                console.error('Error loading work items:', error);
+                showAlert('Error loading work items', 'danger');
+            });
+    }
+    
+    function applyFilters() {
+        let filteredItems = allWorkItems;
+        
+        // Apply type filter
+        if (currentFilter.type) {
+            filteredItems = filteredItems.filter(item => item.type === currentFilter.type);
+        }
+        
+        // Apply status filter
+        if (currentFilter.status) {
+            filteredItems = filteredItems.filter(item => item.status === currentFilter.status);
+        }
+        
+        // Apply priority filter
+        if (currentFilter.priority) {
+            filteredItems = filteredItems.filter(item => item.priority === currentFilter.priority);
+        }
+        
+        // Apply search filter
+        if (currentFilter.search) {
+            const searchTerm = currentFilter.search.toLowerCase();
+            filteredItems = filteredItems.filter(item => 
+                item.title.toLowerCase().includes(searchTerm) ||
+                item.description.toLowerCase().includes(searchTerm) ||
+                item.key_id.toLowerCase().includes(searchTerm)
+            );
+        }
+        
+        renderWorkItems(filteredItems);
+    }
+    
+    function renderWorkItems(workItems = allWorkItems) {
+        const tbody = document.getElementById('workItemsTableBody');
+        
+        if (workItems.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="11" class="text-center text-muted">No work items found.</td></tr>';
+            return;
+        }
+        
+        tbody.innerHTML = workItems.map(item => createWorkItemRow(item)).join('');
+    }
+    
+    function createWorkItemRow(item) {
+        const statusClass = getStatusClass(item.status);
+        const priorityClass = getPriorityClass(item.priority);
+        const typeIcon = getTypeIcon(item.type);
+        
+        return `
+            <tr>
+                <td><small class="text-muted">${item.key_id}</small></td>
+                <td><i class="bi ${typeIcon}"></i> ${item.type}</td>
+                <td>
+                    <div class="fw-bold">${item.title}</div>
+                    ${item.description ? `<small class="text-muted">${item.description.substring(0, 100)}${item.description.length > 100 ? '...' : ''}</small>` : ''}
+                </td>
+                <td><span class="badge ${statusClass}">${item.status.replace('_', ' ')}</span></td>
+                <td><span class="badge ${priorityClass}">${item.priority}</span></td>
+                <td>
+                    ${item.progress_pct !== null ? `
+                        <div class="progress" style="height: 20px;">
+                            <div class="progress-bar" role="progressbar" style="width: ${item.progress_pct}%">
+                                ${item.progress_pct}%
+                            </div>
+                        </div>
+                    ` : '<span class="text-muted">-</span>'}
+                </td>
+                <td><span class="text-muted">-</span></td>
+                <td>${item.due_at ? new Date(item.due_at).toLocaleDateString() : '<span class="text-muted">-</span>'}</td>
+                <td><small class="text-muted">${new Date(item.created_at).toLocaleDateString()}</small></td>
+                <td><small class="text-muted">${new Date(item.updated_at).toLocaleDateString()}</small></td>
+                <td>
+                    <div class="btn-group btn-group-sm">
+                        <button class="btn btn-outline-primary" onclick="editWorkItemModal('${item.id}')" title="Edit">
+                            <i class="bi bi-pencil"></i>
+                        </button>
+                        <button class="btn btn-outline-danger" onclick="deleteWorkItem('${item.id}')" title="Delete">
+                            <i class="bi bi-trash"></i>
+                        </button>
+                    </div>
+                </td>
+            </tr>
+        `;
+    }
+    
+    function getStatusClass(status) {
+        const classes = {
+            'not_started': 'bg-secondary',
+            'in_progress': 'bg-primary',
+            'blocked': 'bg-warning',
+            'ready': 'bg-info',
+            'done': 'bg-success',
+            'cancelled': 'bg-danger'
+        };
+        return classes[status] || 'bg-secondary';
+    }
+    
+    function getPriorityClass(priority) {
+        const classes = {
+            'low': 'bg-secondary',
+            'medium': 'bg-primary',
+            'high': 'bg-warning',
+            'urgent': 'bg-danger'
+        };
+        return classes[priority] || 'bg-secondary';
+    }
+    
+    function getTypeIcon(type) {
+        const icons = {
+            'task': 'bi-check-square',
+            'epic': 'bi-collection',
+            'feature': 'bi-star',
+            'story': 'bi-book',
+            'bug': 'bi-bug'
+        };
+        return icons[type] || 'bi-square';
+    }
+    
+    function updateParentOptions(selectElement, type) {
+        // Clear existing options
+        selectElement.innerHTML = '<option value="">No Parent</option>';
+        
+        // Only show parent options for tasks
+        if (type === 'task') {
+            const taskItems = allWorkItems.filter(item => item.type === 'task');
+            taskItems.forEach(item => {
+                selectElement.innerHTML += `<option value="${item.id}">${item.key_id}: ${item.title}</option>`;
+            });
+        }
+    }
+    
+    // Global functions
+    window.filterByType = function(type) {
+        currentFilter.type = type;
+        document.getElementById('typeFilter').value = type;
+        applyFilters();
+    };
+    
+    window.editWorkItemModal = function(workItemId) {
+        const workItem = allWorkItems.find(item => item.id === workItemId);
+        if (!workItem) return;
+        
+        // Populate edit form
+        document.getElementById('editWorkItemId').value = workItem.id;
+        document.getElementById('editType').value = workItem.type;
+        document.getElementById('editTitle').value = workItem.title;
+        document.getElementById('editDescription').value = workItem.description || '';
+        document.getElementById('editStatus').value = workItem.status;
+        document.getElementById('editPriority').value = workItem.priority;
+        document.getElementById('editParent').value = workItem.parent_id || '';
+        document.getElementById('editDueDate').value = workItem.due_at || '';
+        document.getElementById('editProgress').value = workItem.progress_pct || 0;
+        document.getElementById('editProgressSlider').value = workItem.progress_pct || 0;
+        document.getElementById('editStoryKind').value = workItem.story_kind || 'user';
+        document.getElementById('editRepoUrl').value = workItem.repo_url || '';
+        document.getElementById('editBranch').value = workItem.branch || '';
+        document.getElementById('editCommitHash').value = workItem.commit_hash || '';
+        document.getElementById('editRollupMode').checked = workItem.rollup_mode || false;
+        
+        // Show/hide story kind field
+        const storyKindField = document.getElementById('editStoryKindField');
+        if (workItem.type === 'story') {
+            storyKindField.style.display = 'block';
+        } else {
+            storyKindField.style.display = 'none';
+        }
+        
+        // Update parent options
+        updateParentOptions(document.getElementById('editParent'), workItem.type);
+        
+        // Show modal
+        new bootstrap.Modal(document.getElementById('editWorkItemModal')).show();
+    };
+    
+    window.createWorkItem = function() {
+        const formData = {
+            type: document.getElementById('createType').value,
+            title: document.getElementById('createTitle').value,
+            description: document.getElementById('createDescription').value,
+            priority: document.getElementById('createPriority').value,
+            parent_id: document.getElementById('createParent').value || null,
+            due_at: document.getElementById('createDueDate').value || null,
+            story_kind: document.getElementById('createStoryKind').value,
+            repo_url: document.getElementById('createRepoUrl').value || null,
+            branch: document.getElementById('createBranch').value || null,
+            rollup_mode: document.getElementById('createRollupMode').checked
+        };
+        
+        fetch(`/api/projects/${projectId}/work-items`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(formData)
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.error) {
+                showAlert(data.error, 'danger');
+            } else {
+                showAlert('Work item created successfully', 'success');
+                bootstrap.Modal.getInstance(document.getElementById('createWorkItemModal')).hide();
+                document.getElementById('createWorkItemForm').reset();
+                loadWorkItems();
+            }
+        })
+        .catch(error => {
+            console.error('Error creating work item:', error);
+            showAlert('Error creating work item', 'danger');
+        });
+    };
+    
+    window.updateWorkItem = function() {
+        const workItemId = document.getElementById('editWorkItemId').value;
+        const formData = {
+            title: document.getElementById('editTitle').value,
+            description: document.getElementById('editDescription').value,
+            status: document.getElementById('editStatus').value,
+            priority: document.getElementById('editPriority').value,
+            parent_id: document.getElementById('editParent').value || null,
+            due_at: document.getElementById('editDueDate').value || null,
+            progress_pct: parseFloat(document.getElementById('editProgress').value) || 0,
+            story_kind: document.getElementById('editStoryKind').value,
+            repo_url: document.getElementById('editRepoUrl').value || null,
+            branch: document.getElementById('editBranch').value || null,
+            commit_hash: document.getElementById('editCommitHash').value || null,
+            rollup_mode: document.getElementById('editRollupMode').checked
+        };
+        
+        fetch(`/api/work-items/${workItemId}`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(formData)
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.error) {
+                showAlert(data.error, 'danger');
+            } else {
+                showAlert('Work item updated successfully', 'success');
+                bootstrap.Modal.getInstance(document.getElementById('editWorkItemModal')).hide();
+                loadWorkItems();
+            }
+        })
+        .catch(error => {
+            console.error('Error updating work item:', error);
+            showAlert('Error updating work item', 'danger');
+        });
+    };
+    
+    window.deleteWorkItem = function(workItemId) {
+        if (confirm('Are you sure you want to delete this work item?')) {
+            fetch(`/api/work-items/${workItemId}`, {
+                method: 'DELETE'
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) {
+                    showAlert(data.error, 'danger');
+                } else {
+                    showAlert('Work item deleted successfully', 'success');
+                    loadWorkItems();
+                }
+            })
+            .catch(error => {
+                console.error('Error deleting work item:', error);
+                showAlert('Error deleting work item', 'danger');
+            });
+        }
+    };
+    
+    window.exportToCSV = function() {
+        const filteredItems = allWorkItems.filter(item => {
+            if (currentFilter.type && item.type !== currentFilter.type) return false;
+            if (currentFilter.status && item.status !== currentFilter.status) return false;
+            if (currentFilter.priority && item.priority !== currentFilter.priority) return false;
+            if (currentFilter.search) {
+                const searchTerm = currentFilter.search.toLowerCase();
+                if (!item.title.toLowerCase().includes(searchTerm) &&
+                    !item.description.toLowerCase().includes(searchTerm) &&
+                    !item.key_id.toLowerCase().includes(searchTerm)) return false;
+            }
+            return true;
+        });
+        
+        const csvContent = [
+            ['Key', 'Type', 'Title', 'Status', 'Priority', 'Progress', 'Due Date', 'Created', 'Modified'],
+            ...filteredItems.map(item => [
+                item.key_id,
+                item.type,
+                item.title,
+                item.status,
+                item.priority,
+                item.progress_pct || 0,
+                item.due_at || '',
+                new Date(item.created_at).toLocaleDateString(),
+                new Date(item.updated_at).toLocaleDateString()
+            ])
+        ].map(row => row.map(cell => `"${cell}"`).join(',')).join('\n');
+        
+        const blob = new Blob([csvContent], { type: 'text/csv' });
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `work-items-${new Date().toISOString().split('T')[0]}.csv`;
+        a.click();
+        window.URL.revokeObjectURL(url);
+    };
+    
+    function showAlert(message, type) {
+        const alertDiv = document.createElement('div');
+        alertDiv.className = `alert alert-${type} alert-dismissible fade show`;
+        alertDiv.innerHTML = `
+            ${message}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        `;
+        
+        document.querySelector('.container-fluid').insertBefore(alertDiv, document.querySelector('.row'));
+        
+        // Auto-dismiss after 5 seconds
+        setTimeout(() => {
+            if (alertDiv.parentNode) {
+                alertDiv.remove();
+            }
+        }, 5000);
+    }
+});
+</script>
+
+<style>
+.table th {
+    white-space: nowrap;
+}
+
+.table td {
+    vertical-align: middle;
+}
+
+.progress {
+    min-width: 60px;
+}
+
+.btn-group-sm .btn {
+    padding: 0.25rem 0.5rem;
+}
+</style>
+{% endblock %}

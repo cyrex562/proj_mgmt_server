@@ -33,6 +33,7 @@ class Task(db.Model):
     
     # Relationships
     attachments = db.relationship('FileAttachment', backref='task', lazy='dynamic', cascade='all, delete-orphan')
+    epic = db.relationship('Epic', backref='tasks')
     
     def __repr__(self):
         return f'<Task {self.title}>'
@@ -150,6 +151,38 @@ class Epic(db.Model):
     def is_overdue(self):
         """Check if epic is overdue"""
         return self.due_date and self.due_date < date.today() and not self.is_completed
+    
+    def generate_epic_key(self):
+        """Generate a unique epic key for this project"""
+        if not self.project:
+            return f"EPIC-{self.id:03d}"
+        
+        # Extract first 3-4 characters from project name and convert to uppercase
+        base_key = ''.join(c.upper() for c in self.project.name if c.isalnum())[:4]
+        if len(base_key) < 3:
+            base_key = base_key.ljust(3, 'X')
+        
+        # Find the next available number for this project
+        counter = 1
+        while True:
+            key = f"{base_key}-EPIC-{counter:03d}"
+            existing = Epic.query.filter_by(epic_key=key).first()
+            if not existing:
+                return key
+            counter += 1
+    
+    def calculate_progress_from_tasks(self):
+        """Calculate progress percentage based on assigned tasks"""
+        assigned_tasks = self.tasks.all()
+        if not assigned_tasks:
+            return 0
+        
+        total_progress = sum(task.progress_percentage or 0 for task in assigned_tasks)
+        return round(total_progress / len(assigned_tasks))
+    
+    def update_progress_from_tasks(self):
+        """Update progress percentage based on assigned tasks"""
+        self.progress_percentage = self.calculate_progress_from_tasks()
 
 class Story(db.Model):
     """User story model"""
@@ -243,61 +276,3 @@ class Bug(db.Model):
     def is_overdue(self):
         """Check if bug is overdue"""
         return self.due_date and self.due_date < date.today() and not self.is_completed
-
-class Milestone(db.Model):
-    """Milestone model for project phases"""
-    __tablename__ = 'milestones'
-    
-    id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(128), nullable=False, index=True)
-    description = db.Column(db.Text)
-    status = db.Column(db.String(32), default='planned')  # planned, in_progress, completed, cancelled
-    target_date = db.Column(db.Date)
-    completed_date = db.Column(db.Date)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
-    
-    # Foreign keys
-    project_id = db.Column(db.Integer, db.ForeignKey('projects.id'), nullable=False)
-    
-    # Relationships
-    tasks = db.relationship('Task', backref='milestone', lazy='dynamic')
-    
-    def __repr__(self):
-        return f'<Milestone {self.name}>'
-    
-    @property
-    def is_completed(self):
-        """Check if milestone is completed"""
-        return self.status == 'completed'
-    
-    @property
-    def is_overdue(self):
-        """Check if milestone is overdue"""
-        return self.target_date and self.target_date < date.today() and not self.is_completed
-    
-    @property
-    def task_count(self):
-        """Get total number of tasks assigned to this milestone"""
-        return self.tasks.count()
-    
-    @property
-    def completed_task_count(self):
-        """Get number of completed tasks assigned to this milestone"""
-        return self.tasks.filter_by(status='done').count()
-    
-    def update_status(self):
-        """Update milestone status based on associated tasks"""
-        if self.tasks.count() == 0:
-            return
-        
-        completed_tasks = self.tasks.filter_by(status='done').count()
-        total_tasks = self.tasks.count()
-        
-        if completed_tasks == total_tasks:
-            self.status = 'completed'
-            self.completed_date = date.today()
-        elif completed_tasks > 0:
-            self.status = 'in_progress'
-        else:
-            self.status = 'planned'

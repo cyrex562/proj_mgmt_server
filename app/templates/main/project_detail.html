@@ -13,6 +13,34 @@
         <a href="{{ url_for('main.project_milestones', project_id=project.id) }}" class="btn btn-outline-warning me-2">
             <i class="bi bi-flag"></i> Milestones
         </a>
+        <a href="{{ url_for('main.project_epics', project_id=project.id) }}" class="btn btn-outline-secondary me-2">
+            <i class="bi bi-collection"></i> Epics
+        </a>
+        <a href="{{ url_for('main.project_work_items', project_id=project.id) }}" class="btn btn-outline-primary me-2">
+            <i class="bi bi-list-task"></i> Work Items
+        </a>
+        <div class="btn-group me-2" role="group">
+            <button type="button" class="btn btn-outline-info dropdown-toggle" data-bs-toggle="dropdown">
+                <i class="bi bi-filter"></i> Filter Views
+            </button>
+            <ul class="dropdown-menu">
+                <li><a class="dropdown-item" href="{{ url_for('main.project_tasks', project_id=project.id) }}">
+                    <i class="bi bi-check-square"></i> Tasks
+                </a></li>
+                <li><a class="dropdown-item" href="{{ url_for('main.project_epics_filtered', project_id=project.id) }}">
+                    <i class="bi bi-collection"></i> Epics
+                </a></li>
+                <li><a class="dropdown-item" href="{{ url_for('main.project_features', project_id=project.id) }}">
+                    <i class="bi bi-star"></i> Features
+                </a></li>
+                <li><a class="dropdown-item" href="{{ url_for('main.project_stories', project_id=project.id) }}">
+                    <i class="bi bi-book"></i> Stories
+                </a></li>
+                <li><a class="dropdown-item" href="{{ url_for('main.project_bugs', project_id=project.id) }}">
+                    <i class="bi bi-bug"></i> Bugs
+                </a></li>
+            </ul>
+        </div>
         <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#createTaskModal">
             <i class="bi bi-plus-circle"></i> New Task
         </button>
@@ -194,15 +222,15 @@ document.addEventListener('DOMContentLoaded', function() {
     });
     
     function loadProjectTasks() {
-        fetch(`/api/projects/${projectId}/tasks`)
+        fetch(`/api/projects/${projectId}/work-items`)
             .then(response => response.json())
-            .then(tasks => {
-                updateProjectStats(tasks);
-                displayRecentTasks(tasks);
+            .then(workItems => {
+                updateProjectStats(workItems);
+                displayRecentTasks(workItems);
             })
             .catch(error => {
-                console.error('Error loading tasks:', error);
-                showAlert('Error loading project tasks', 'danger');
+                console.error('Error loading work items:', error);
+                showAlert('Error loading project work items', 'danger');
             });
     }
     
@@ -289,12 +317,23 @@ document.addEventListener('DOMContentLoaded', function() {
         const formData = new FormData(document.getElementById('createTaskForm'));
         const taskData = Object.fromEntries(formData);
         
-        fetch(`/api/projects/${projectId}/tasks`, {
+        // Transform data for work items API
+        const workItemData = {
+            title: taskData.title,
+            description: taskData.description,
+            type: taskData.task_type || 'task',
+            status: taskData.status || 'not_started',
+            priority: taskData.priority || 'medium',
+            due_at: taskData.due_date || null,
+            assignee_id: taskData.assignee_id || null
+        };
+        
+        fetch(`/api/projects/${projectId}/work-items`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
             },
-            body: JSON.stringify(taskData)
+            body: JSON.stringify(workItemData)
         })
         .then(response => response.json())
         .then(data => {

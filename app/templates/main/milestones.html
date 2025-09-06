@@ -191,7 +191,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     function loadTasks() {
-        fetch(`/api/projects/${projectId}/tasks`)
+        fetch(`/api/projects/${projectId}/work-items`)
             .then(response => response.json())
             .then(data => {
                 allTasks = data;
@@ -491,6 +491,10 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     window.assignTask = function(milestoneId, taskId) {
+        // TODO: Implement milestone assignment using work items API
+        showAlert('Milestone assignment not yet implemented in new system', 'warning');
+        return;
+        /*
         fetch(`/api/milestones/${milestoneId}/tasks/${taskId}`, {
             method: 'POST'
         })
@@ -508,9 +512,14 @@ document.addEventListener('DOMContentLoaded', function() {
             console.error('Error:', error);
             showAlert('Error assigning task', 'danger');
         });
+        */
     };
     
     window.unassignTask = function(milestoneId, taskId) {
+        // TODO: Implement milestone unassignment using work items API
+        showAlert('Milestone unassignment not yet implemented in new system', 'warning');
+        return;
+        /*
         fetch(`/api/milestones/${milestoneId}/tasks/${taskId}`, {
             method: 'DELETE'
         })
@@ -528,6 +537,7 @@ document.addEventListener('DOMContentLoaded', function() {
             console.error('Error:', error);
             showAlert('Error unassigning task', 'danger');
         });
+        */
     };
     
     function showAlert(message, type) {

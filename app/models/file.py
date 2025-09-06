@@ -17,12 +17,13 @@ class FileAttachment(db.Model):
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     
     # Foreign keys
-    task_id = db.Column(db.Integer, db.ForeignKey('tasks.id'))
-    project_id = db.Column(db.Integer, db.ForeignKey('projects.id'))
+    work_item_id = db.Column(db.String(36), db.ForeignKey('work_items.id'))
+    project_id = db.Column(db.String(36), db.ForeignKey('projects.id'))
     uploaded_by_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
     
     # Relationships
     uploaded_by = db.relationship('User', backref='uploaded_files')
+    work_item = db.relationship('WorkItem', backref='attachments')
     
     def __repr__(self):
         return f'<FileAttachment {self.original_filename}>'

@@ -2,9 +2,9 @@ from flask import request, jsonify
 from flask_login import login_required, current_user
 from app import db
 from app.api import bp
-from app.models.project import Project, ProjectMember
+from app.models.project_new import Project, ProjectMember
 from app.models.user import User
-from app.api.schemas import ProjectSchema, ProjectMemberSchema
+from app.api.schemas_new import ProjectSchema, ProjectMemberSchema
 
 project_schema = ProjectSchema()
 projects_schema = ProjectSchema(many=True)

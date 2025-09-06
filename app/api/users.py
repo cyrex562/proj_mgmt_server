@@ -3,7 +3,7 @@ from flask_login import login_required, current_user
 from app import db
 from app.api import bp
 from app.models.user import User
-from app.api.schemas import UserSchema
+from app.api.schemas_new import UserSchema
 
 user_schema = UserSchema()
 users_schema = UserSchema(many=True)

@@ -4,9 +4,9 @@ from werkzeug.utils import secure_filename
 from app import db
 from app.api import bp
 from app.models.file import FileAttachment
-from app.models.task import Task
-from app.models.project import Project
-from app.api.schemas import FileAttachmentSchema
+from app.models.work_item import WorkItem
+from app.models.project_new import Project
+from app.api.schemas_new import FileAttachmentSchema
 import os
 import uuid
 from datetime import datetime
@@ -25,25 +25,25 @@ def allowed_file(filename):
     return '.' in filename and \
            filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
-@bp.route('/tasks/<int:task_id>/files', methods=['GET'])
+@bp.route('/work-items/<uuid:work_item_id>/files', methods=['GET'])
 @login_required
-def get_task_files(task_id):
-    """Get all files attached to a task"""
-    task = Task.query.get_or_404(task_id)
+def get_work_item_files(work_item_id):
+    """Get all files attached to a work item"""
+    work_item = WorkItem.query.get_or_404(work_item_id)
     
-    if not task.project.can_user_access(current_user):
+    if not work_item.project.can_user_access(current_user):
         return jsonify({'error': 'Access denied'}), 403
     
-    files = task.attachments.all()
+    files = work_item.attachments.all()
     return jsonify(files_schema.dump(files))
 
-@bp.route('/tasks/<int:task_id>/files', methods=['POST'])
+@bp.route('/work-items/<uuid:work_item_id>/files', methods=['POST'])
 @login_required
-def upload_task_file(task_id):
-    """Upload a file to a task"""
-    task = Task.query.get_or_404(task_id)
+def upload_work_item_file(work_item_id):
+    """Upload a file to a work item"""
+    work_item = WorkItem.query.get_or_404(work_item_id)
     
-    if not task.project.can_user_access(current_user, 'member'):
+    if not work_item.project.can_user_access(current_user, 'member'):
         return jsonify({'error': 'Access denied'}), 403
     
     if 'file' not in request.files:
@@ -78,7 +78,7 @@ def upload_task_file(task_id):
         file_size=file_size,
         mime_type=mime_type,
         storage_type='local',
-        task_id=task.id,
+        work_item_id=work_item.id,
         uploaded_by_id=current_user.id
     )
     
@@ -94,8 +94,8 @@ def download_file(file_id):
     attachment = FileAttachment.query.get_or_404(file_id)
     
     # Check access permissions
-    if attachment.task:
-        if not attachment.task.project.can_user_access(current_user):
+    if attachment.work_item:
+        if not attachment.work_item.project.can_user_access(current_user):
             return jsonify({'error': 'Access denied'}), 403
     elif attachment.project:
         if not attachment.project.can_user_access(current_user):
@@ -124,8 +124,8 @@ def delete_file(file_id):
     attachment = FileAttachment.query.get_or_404(file_id)
     
     # Check access permissions
-    if attachment.task:
-        if not attachment.task.project.can_user_access(current_user, 'admin'):
+    if attachment.work_item:
+        if not attachment.work_item.project.can_user_access(current_user, 'admin'):
             return jsonify({'error': 'Access denied'}), 403
     elif attachment.project:
         if not attachment.project.can_user_access(current_user, 'admin'):

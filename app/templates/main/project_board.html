@@ -211,7 +211,7 @@ document.addEventListener('DOMContentLoaded', function() {
     setupSortable();
     
     function loadTasks() {
-        fetch(`/api/projects/${projectId}/tasks`)
+        fetch(`/api/projects/${projectId}/work-items`)
             .then(response => response.json())
             .then(tasks => {
                 allTasks = tasks;
@@ -373,7 +373,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     function updateTaskStatus(taskId, newStatus) {
-        fetch(`/api/tasks/${taskId}`, {
+        fetch(`/api/work-items/${taskId}`, {
             method: 'PUT',
             headers: {
                 'Content-Type': 'application/json',
@@ -408,12 +408,23 @@ document.addEventListener('DOMContentLoaded', function() {
         const formData = new FormData(document.getElementById('createTaskForm'));
         const taskData = Object.fromEntries(formData);
         
-        fetch(`/api/projects/${projectId}/tasks`, {
+        // Transform data for work items API
+        const workItemData = {
+            title: taskData.title,
+            description: taskData.description,
+            type: taskData.task_type || 'task',
+            status: taskData.status || 'not_started',
+            priority: taskData.priority || 'medium',
+            due_at: taskData.due_date || null,
+            assignee_id: taskData.assignee_id || null
+        };
+        
+        fetch(`/api/projects/${projectId}/work-items`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
             },
-            body: JSON.stringify(taskData)
+            body: JSON.stringify(workItemData)
         })
         .then(response => response.json())
         .then(data => {

@@ -1,7 +1,7 @@
 from app import create_app, db
 from app.models.user import User, Group, Permission
-from app.models.project import Project
-from app.models.task import Task
+from app.models.project_new import Project
+from app.models.work_item import WorkItem
 from app.models.file import FileAttachment
 
 app = create_app()
@@ -14,7 +14,7 @@ def make_shell_context():
         'Group': Group,
         'Permission': Permission,
         'Project': Project,
-        'Task': Task,
+        'WorkItem': WorkItem,
         'FileAttachment': FileAttachment
     }
 

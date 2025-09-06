@@ -154,7 +154,10 @@
                         <th style="width: 12%;">Assignee</th>
                         <th style="width: 8%;">Due Date</th>
                         <th style="width: 5%;">Progress</th>
+                        <th style="width: 8%;">Epic</th>
                         <th style="width: 8%;">Milestone</th>
+                        <th style="width: 10%;">Created</th>
+                        <th style="width: 10%;">Modified</th>
                         <th style="width: 8%;">Actions</th>
                     </tr>
                 </thead>
@@ -251,6 +254,17 @@
                     <div class="row">
                         <div class="col-md-6">
                             <div class="mb-3">
+                                <label for="taskEpic" class="form-label">Epic</label>
+                                <select class="form-select" id="taskEpic" name="epic_id">
+                                    <option value="">No Epic</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
                                 <label for="taskMilestone" class="form-label">Milestone</label>
                                 <select class="form-select" id="taskMilestone" name="milestone_id">
                                     <option value="">No Milestone</option>
@@ -288,7 +302,10 @@
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title">Edit Task</h5>
+                <div>
+                    <h5 class="modal-title">Edit Task</h5>
+                    <small class="text-muted" id="editTaskKey">Task Key</small>
+                </div>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <form id="editTaskForm">
@@ -354,7 +371,15 @@
                     </div>
                     
                     <div class="row">
-                        <div class="col-md-6">
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label for="editTaskEpic" class="form-label">Epic</label>
+                                <select class="form-select" id="editTaskEpic" name="epic_id">
+                                    <option value="">No Epic</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
                             <div class="mb-3">
                                 <label for="editTaskMilestone" class="form-label">Milestone</label>
                                 <select class="form-select" id="editTaskMilestone" name="milestone_id">
@@ -362,7 +387,7 @@
                                 </select>
                             </div>
                         </div>
-                        <div class="col-md-6">
+                        <div class="col-md-4">
                             <div class="mb-3">
                                 <label for="editTaskProgress" class="form-label">Progress (%)</label>
                                 <div class="d-flex align-items-center gap-3">
@@ -388,6 +413,26 @@
                             </div>
                         </div>
                     </div>
+                    
+                    <!-- Date Information -->
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label">Created</label>
+                                <div class="form-control-plaintext" id="editTaskCreated">
+                                    <small class="text-muted">-</small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label">Last Modified</label>
+                                <div class="form-control-plaintext" id="editTaskModified">
+                                    <small class="text-muted">-</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
@@ -407,17 +452,19 @@ document.addEventListener('DOMContentLoaded', function() {
     let filteredTasks = [];
     let allUsers = [];
     let allMilestones = [];
+    let allEpics = [];
     
-    // Load tasks, users, and milestones
+    // Load tasks, users, milestones, and epics
     loadTasks();
     loadUsers();
     loadMilestones();
+    loadEpics();
     
     // Setup event listeners
     setupEventListeners();
     
     function loadTasks() {
-        fetch(`/api/projects/${projectId}/tasks`)
+        fetch(`/api/projects/${projectId}/work-items`)
             .then(response => response.json())
             .then(tasks => {
                 allTasks = tasks;
@@ -452,6 +499,27 @@ document.addEventListener('DOMContentLoaded', function() {
             })
             .catch(error => {
                 console.error('Error loading users:', error);
+            });
+    }
+    
+    function loadEpics() {
+        fetch(`/api/projects/${projectId}/epics`)
+            .then(response => response.json())
+            .then(epics => {
+                allEpics = epics; // Store globally
+                
+                const taskEpic = document.getElementById('taskEpic');
+                const editTaskEpic = document.getElementById('editTaskEpic');
+                
+                epics.forEach(epic => {
+                    const option1 = new Option(epic.title, epic.id);
+                    const option2 = new Option(epic.title, epic.id);
+                    taskEpic.add(option1);
+                    editTaskEpic.add(option2);
+                });
+            })
+            .catch(error => {
+                console.error('Error loading epics:', error);
             });
     }
     
@@ -571,12 +639,25 @@ document.addEventListener('DOMContentLoaded', function() {
                 </span>
                 <input type="number" class="form-control form-control-sm d-none" value="${task.progress_percentage || 0}" min="0" max="100" step="1">
             </td>
+            <td class="editable-cell" data-field="epic_id" data-task-id="${task.id}">
+                <span class="cell-content">${task.epic ? task.epic.title : '-'}</span>
+                <select class="form-select form-select-sm d-none">
+                    <option value="">No Epic</option>
+                    ${allEpics ? allEpics.map(epic => `<option value="${epic.id}" ${task.epic_id === epic.id ? 'selected' : ''}>${epic.title}</option>`).join('') : ''}
+                </select>
+            </td>
             <td class="editable-cell" data-field="milestone_id" data-task-id="${task.id}">
                 <span class="cell-content">${task.milestone ? task.milestone.name : '-'}</span>
                 <select class="form-select form-select-sm d-none">
                     <option value="">No Milestone</option>
                     ${allMilestones ? allMilestones.map(milestone => `<option value="${milestone.id}" ${task.milestone_id === milestone.id ? 'selected' : ''}>${milestone.name}</option>`).join('') : ''}
                 </select>
+            </td>
+            <td>
+                <small class="text-muted">${task.created_at ? new Date(task.created_at).toLocaleDateString() + ' ' + new Date(task.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : '-'}</small>
+            </td>
+            <td>
+                <small class="text-muted">${task.updated_at ? new Date(task.updated_at).toLocaleDateString() + ' ' + new Date(task.updated_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : '-'}</small>
             </td>
             <td>
                 <div class="btn-group btn-group-sm" role="group">
@@ -674,12 +755,23 @@ document.addEventListener('DOMContentLoaded', function() {
         const formData = new FormData(document.getElementById('createTaskForm'));
         const taskData = Object.fromEntries(formData);
         
-        fetch(`/api/projects/${projectId}/tasks`, {
+        // Transform data for work items API
+        const workItemData = {
+            title: taskData.title,
+            description: taskData.description,
+            type: taskData.task_type || 'task',
+            status: taskData.status || 'not_started',
+            priority: taskData.priority || 'medium',
+            due_at: taskData.due_date || null,
+            assignee_id: taskData.assignee_id || null
+        };
+        
+        fetch(`/api/projects/${projectId}/work-items`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
             },
-            body: JSON.stringify(taskData)
+            body: JSON.stringify(workItemData)
         })
         .then(response => response.json())
         .then(data => {
@@ -714,12 +806,14 @@ document.addEventListener('DOMContentLoaded', function() {
         
         // Populate the edit form
         document.getElementById('editTaskId').value = task.id;
+        document.getElementById('editTaskKey').textContent = task.task_key || `TASK-${task.id}`;
         document.getElementById('editTaskTitle').value = task.title;
         document.getElementById('editTaskDescription').value = task.description || '';
         document.getElementById('editTaskType').value = task.task_type || 'task';
         document.getElementById('editTaskStatus').value = task.status || 'backlog';
         document.getElementById('editTaskPriority').value = task.priority || 'medium';
         document.getElementById('editTaskAssignee').value = task.assignee_id || '';
+        document.getElementById('editTaskEpic').value = task.epic_id || '';
         document.getElementById('editTaskMilestone').value = task.milestone_id || '';
         
         const progressValue = task.progress_percentage || 0;
@@ -728,6 +822,13 @@ document.addEventListener('DOMContentLoaded', function() {
         
         document.getElementById('editTaskDueDate').value = task.due_date || '';
         document.getElementById('editTaskEstimatedHours').value = task.estimated_hours || '';
+        
+        // Populate date information
+        const createdDate = task.created_at ? new Date(task.created_at).toLocaleDateString() + ' ' + new Date(task.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : '-';
+        const modifiedDate = task.updated_at ? new Date(task.updated_at).toLocaleDateString() + ' ' + new Date(task.updated_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : '-';
+        
+        document.getElementById('editTaskCreated').innerHTML = `<small class="text-muted">${createdDate}</small>`;
+        document.getElementById('editTaskModified').innerHTML = `<small class="text-muted">${modifiedDate}</small>`;
         
         // Show the modal
         const modal = new bootstrap.Modal(document.getElementById('editTaskModal'));
@@ -739,7 +840,7 @@ document.addEventListener('DOMContentLoaded', function() {
             return;
         }
         
-        fetch(`/api/tasks/${taskId}`, {
+        fetch(`/api/work-items/${taskId}`, {
             method: 'DELETE',
             headers: {
                 'Content-Type': 'application/json',
@@ -810,6 +911,8 @@ document.addEventListener('DOMContentLoaded', function() {
             return dateText === '-' ? '' : dateText;
         } else if (field === 'assignee_id') {
             return content.textContent.trim() === 'Unassigned' ? '' : content.textContent.trim();
+        } else if (field === 'epic_id') {
+            return content.textContent.trim() === '-' ? '' : content.textContent.trim();
         } else if (field === 'milestone_id') {
             return content.textContent.trim() === '-' ? '' : content.textContent.trim();
         } else if (field === 'progress_percentage') {
@@ -827,7 +930,7 @@ document.addEventListener('DOMContentLoaded', function() {
     function updateTaskField(taskId, field, value) {
         const taskData = { [field]: value };
         
-        fetch(`/api/tasks/${taskId}`, {
+        fetch(`/api/work-items/${taskId}`, {
             method: 'PUT',
             headers: {
                 'Content-Type': 'application/json',
@@ -880,7 +983,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 taskData[key] = value || null;
             }
             
-            fetch(`/api/tasks/${taskId}`, {
+            fetch(`/api/work-items/${taskId}`, {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',

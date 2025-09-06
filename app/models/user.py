@@ -75,7 +75,7 @@ class User(UserMixin, db.Model):
     # Relationships
     groups = db.relationship('Group', secondary='user_groups', back_populates='users')
     created_projects = db.relationship('Project', backref='creator', lazy='dynamic')
-    assigned_tasks = db.relationship('Task', backref='assignee', lazy='dynamic')
+    # assigned_work_items relationship is defined in WorkItem model via backref
     
     def __repr__(self):
         return f'<User {self.username}>'
